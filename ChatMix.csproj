@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ChatMix</AssemblyName>
+    <RootNamespace>ChatMix</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+
+  <!--
+    Combining UseWPF + UseWindowsForms makes the SDK implicitly (globally) "using" both
+    System.Windows and System.Windows.Forms in every file, which collide on Application,
+    MessageBox, TextBox, Button, etc. (CS0104). Drop the WinForms one from the global set;
+    HotkeyService.cs and TrayIconManager.cs (the only files that need WinForms types) add
+    their own local "using System.Windows.Forms;" instead.
+  -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+</Project>

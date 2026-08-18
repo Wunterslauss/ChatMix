@@ -1,0 +1,22 @@
+## .NET build output
+bin/
+obj/
+publish/
+*.pdb
+
+## User-specific files
+*.user
+*.suo
+
+## Visual Studio / Rider
+.vs/
+.idea/
+*.userosscache
+*.sln.docstates
+
+## Windows
+Thumbs.db
+desktop.ini
+
+## Local agent/session files
+.claude/
