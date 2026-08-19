@@ -9,7 +9,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ChatMix</AssemblyName>
     <RootNamespace>ChatMix</RootNamespace>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      NOT InvariantGlobalization: WPF's text-input stack (any TextBox, including the whole
+      Settings window) needs real CultureInfo data for the user's actual Windows input language
+      to manage the text caret. In invariant mode that throws CultureNotFoundException the moment
+      a non-English-input-language user clicks into a text field - see dotnet/runtime#54020.
+    -->
   </PropertyGroup>
 
   <ItemGroup>
