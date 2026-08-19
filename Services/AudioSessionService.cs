@@ -206,6 +206,19 @@ public sealed class AudioSessionService : IDisposable
         return ChatVolumePercent;
     }
 
+    /// <summary>Shifts focus between the two groups: positive moves toward Chat (Chat up,
+    /// Everything down by the same amount), negative moves toward Everything.</summary>
+    public (int Chat, int Everything) Crossfade(int deltaTowardChatPercent)
+    {
+        _preDuckVolume = null; // manual control cancels any pending duck-restore, same as AdjustChatVolume
+        ChatVolumePercent = Math.Clamp(ChatVolumePercent + deltaTowardChatPercent, 0, 100);
+        EverythingVolumePercent = Math.Clamp(EverythingVolumePercent - deltaTowardChatPercent, 0, 100);
+        if (deltaTowardChatPercent > 0 && ChatVolumePercent > 0) ChatMuted = false;
+        ApplyToAllSessions();
+        StateChanged?.Invoke();
+        return (ChatVolumePercent, EverythingVolumePercent);
+    }
+
     public int AdjustEverythingVolume(int deltaPercent)
     {
         EverythingVolumePercent = Math.Clamp(EverythingVolumePercent + deltaPercent, 0, 100);

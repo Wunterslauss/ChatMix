@@ -27,10 +27,23 @@ public partial class OverlayWindow : Window
 
     public void ShowVolume(string title, int percent, bool muted)
     {
-        TitleText.Text = title;
         percent = Math.Clamp(percent, 0, 100);
-        PercentText.Text = muted ? "Muted" : $"{percent}%";
-        FillBar.Width = FillTrack.Width * (percent / 100.0);
+        Present(title, muted ? "Muted" : $"{percent}%", percent);
+    }
+
+    /// <summary>Crossfade feedback: shows both values, with the fill bar tracking the chat side.</summary>
+    public void ShowBalance(int chatPercent, int everythingPercent)
+    {
+        chatPercent = Math.Clamp(chatPercent, 0, 100);
+        everythingPercent = Math.Clamp(everythingPercent, 0, 100);
+        Present("Chat / Everything", $"{chatPercent}% / {everythingPercent}%", chatPercent);
+    }
+
+    private void Present(string title, string valueText, int fillPercent)
+    {
+        TitleText.Text = title;
+        PercentText.Text = valueText;
+        FillBar.Width = FillTrack.Width * (fillPercent / 100.0);
 
         PositionWindow();
         Opacity = 1;

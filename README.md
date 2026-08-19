@@ -29,6 +29,10 @@ ChatMix controls real Windows audio sessions directly via the Core Audio API (NA
 - **System tray icon** showing current Chat / Everything Else volume, with a Settings window for
   editing the chat process list, hotkeys, and step size, plus a "Start with Windows" toggle.
 - **On-screen overlay** that briefly shows the new volume after a hotkey press, then auto-hides.
+- **Volume-wheel crossfade** (opt-in, Settings → General) — repurposes the standard system volume
+  up/down keys (what a keyboard's dedicated volume wheel/rocker sends, e.g. the Razer DeathStalker
+  V2 Pro's scroll wheel) into a Chat ↔ Everything crossfade instead of the system volume. Works via
+  a low-level keyboard hook that suppresses the key so Windows doesn't also change master volume.
 - Settings are stored as plain JSON at `%AppData%\ChatMix\settings.json`.
 - No telemetry, no unnecessary dependencies (just NAudio + standard .NET/WPF).
 
@@ -38,7 +42,7 @@ ChatMix controls real Windows audio sessions directly via the Core Audio API (NA
 ChatMix.csproj        Project file (net8.0-windows, WPF + WinForms)
 App.xaml / App.xaml.cs  App entry point, wires everything together
 Models/                Settings, hotkey binding, and action data types
-Services/              AudioSessionService, HotkeyService, SettingsService, StartupService
+Services/              AudioSessionService, HotkeyService, VolumeKeyCrossfadeService, SettingsService, StartupService
 UI/                    Tray icon, on-screen overlay, settings window
 ```
 
@@ -80,3 +84,16 @@ Stream Deck's built-in **Hotkey** action can trigger them directly:
 
 Bindings can be changed any time from ChatMix's tray menu → **Settings → Hotkeys** (click a box,
 press the new combo, Escape clears it) — just remember to update the matching Stream Deck button too.
+
+## Using a keyboard's volume wheel (e.g. Razer DeathStalker V2 Pro)
+
+Many keyboards have a dedicated volume wheel/rocker that sends the standard system Volume
+Up/Down keys — the same keys any keyboard's Fn+volume combo sends. Turn on **Settings → General
+→ "Use volume up/down keys to crossfade Chat ↔ Everything instead of the system volume"** and
+ChatMix will intercept those keys system-wide: scrolling one way shifts focus toward Chat (Chat
+up, Everything down), the other way shifts it toward Everything, and your system volume is left
+untouched instead of also changing underneath it.
+
+This is a global behavior change — while it's on, volume up/down keys on *any* keyboard stop
+controlling system volume entirely and drive this crossfade instead. That's why it defaults to
+off.

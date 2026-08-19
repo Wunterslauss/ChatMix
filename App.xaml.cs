@@ -22,6 +22,7 @@ public partial class App : Application
     private TrayIconManager _trayIconManager = null!;
     private OverlayWindow _overlay = null!;
     private DispatcherTimer _pollTimer = null!;
+    private VolumeKeyCrossfadeService _volumeKeyCrossfade = null!;
     private SettingsWindow? _settingsWindow;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -52,6 +53,10 @@ public partial class App : Application
         var failed = _hotkeyService.RegisterAll(s.Hotkeys);
 
         _overlay = new OverlayWindow();
+
+        _volumeKeyCrossfade = new VolumeKeyCrossfadeService(_audioService, _settingsService);
+        _volumeKeyCrossfade.BalanceChanged += (chat, everything) => _overlay.ShowBalance(chat, everything);
+        _volumeKeyCrossfade.SetEnabled(s.VolumeWheelCrossfadeEnabled);
 
         _trayIconManager = new TrayIconManager(_audioService, _settingsService, OpenSettings, () => Shutdown());
 
@@ -129,12 +134,14 @@ public partial class App : Application
         }
 
         StartupService.SetStartWithWindows(s.StartWithWindows);
+        _volumeKeyCrossfade.SetEnabled(s.VolumeWheelCrossfadeEnabled);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _pollTimer?.Stop();
         _hotkeyService?.Dispose();
+        _volumeKeyCrossfade?.Dispose();
         _audioService?.Dispose();
         _trayIconManager?.Dispose();
 

@@ -21,6 +21,7 @@ public sealed class SettingsWindow : Window
     private TextBox _stepBox = null!;
     private TextBox _duckBox = null!;
     private CheckBox _startupCheck = null!;
+    private CheckBox _crossfadeCheck = null!;
 
     private readonly Dictionary<HotkeyAction, HotkeyBinding> _workingHotkeys = new();
 
@@ -189,12 +190,35 @@ public sealed class SettingsWindow : Window
         var panel = new StackPanel { Margin = new Thickness(12) };
         _startupCheck = new CheckBox { Content = "Start ChatMix with Windows", IsChecked = _s.StartWithWindows, Margin = new Thickness(0, 0, 0, 10) };
         panel.Children.Add(_startupCheck);
+
+        _crossfadeCheck = new CheckBox
+        {
+            Content = new TextBlock
+            {
+                Text = "Use volume up/down keys (e.g. a keyboard's dedicated volume wheel) to "
+                     + "crossfade Chat ↔ Everything instead of the system volume",
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 380
+            },
+            IsChecked = _s.VolumeWheelCrossfadeEnabled,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        panel.Children.Add(_crossfadeCheck);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "While this is on, volume up/down keys never change your system volume - only "
+                 + "the Chat/Everything balance, everywhere, from any keyboard.",
+            TextWrapping = TextWrapping.Wrap,
+            Opacity = 0.7,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+
         panel.Children.Add(new TextBlock
         {
             Text = "Settings are stored at:\n" + PathHint(),
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.7,
-            Margin = new Thickness(0, 20, 0, 0)
+            Margin = new Thickness(0, 10, 0, 0)
         });
         return new TabItem { Header = "General", Content = panel };
     }
@@ -224,6 +248,7 @@ public sealed class SettingsWindow : Window
         _s.Hotkeys.ToggleDuckChat = _workingHotkeys[HotkeyAction.ToggleDuckChat];
 
         _s.StartWithWindows = _startupCheck.IsChecked == true;
+        _s.VolumeWheelCrossfadeEnabled = _crossfadeCheck.IsChecked == true;
 
         _settingsService.Save();
         SettingsSaved?.Invoke();
