@@ -18,11 +18,17 @@ public sealed class AudioSessionService : IDisposable
     private readonly MMDeviceEnumerator _enumerator = new();
     private MMDevice? _device;
     private List<string> _chatProcessNames;
+    private readonly Dictionary<uint, string?> _processNameCache = new();
+    private readonly Dictionary<uint, (float Volume, bool Mute)> _lastApplied = new();
 
     public int ChatVolumePercent { get; private set; }
     public int EverythingVolumePercent { get; private set; }
     public bool ChatMuted { get; private set; }
     public bool IsDucked => _preDuckVolume.HasValue;
+
+    /// <summary>Set when a poll tick fails (e.g. default device transiently unavailable); cleared on
+    /// the next successful poll. TrayIconManager surfaces this so a degraded state isn't silent.</summary>
+    public string? LastPollError { get; private set; }
 
     private int? _preDuckVolume;
 
@@ -46,6 +52,9 @@ public sealed class AudioSessionService : IDisposable
     public void UpdateChatProcessNames(List<string> names)
     {
         _chatProcessNames = Normalize(names);
+        // A session's chat/everything-else classification can flip, so a cached "already applied
+        // this value" entry could wrongly skip re-applying it under its new classification.
+        _lastApplied.Clear();
         ApplyToAllSessions();
     }
 
@@ -55,17 +64,23 @@ public sealed class AudioSessionService : IDisposable
         try
         {
             var currentDefaultId = SafeGetDefaultDeviceId();
-            if (_device == null || (currentDefaultId != null && !string.Equals(currentDefaultId, _device.ID, StringComparison.Ordinal)))
+            // Refresh whenever we can't positively confirm _device is still the current default -
+            // including when the default is momentarily unreadable - rather than only on a known
+            // ID change, so a disconnected/stale _device doesn't linger silently across ticks.
+            if (_device == null || currentDefaultId == null || !string.Equals(currentDefaultId, _device.ID, StringComparison.Ordinal))
             {
                 RefreshDevice();
             }
 
             _device?.AudioSessionManager?.RefreshSessions();
             ApplyToAllSessions();
+            LastPollError = null;
         }
-        catch
+        catch (Exception ex)
         {
-            // Default device can be transiently unavailable (headset unplugged, etc). Just retry next tick.
+            // Default device can be transiently unavailable (headset unplugged, etc). Surface it
+            // instead of failing silently - TrayIconManager shows LastPollError - and retry next tick.
+            LastPollError = ex.Message;
         }
     }
 
@@ -111,22 +126,29 @@ public sealed class AudioSessionService : IDisposable
                     var session = sessions[i];
                     if (session.State == AudioSessionState.AudioSessionStateExpired) continue;
 
-                    var processName = GetProcessName(session);
+                    var pid = GetSessionProcessId(session);
+                    var processName = pid.HasValue ? GetProcessName(pid.Value) : null;
                     var vol = session.SimpleAudioVolume;
                     if (vol == null) continue;
 
                     bool isChat = processName != null && _chatProcessNames.Contains(processName);
-                    if (isChat)
+                    float targetVolume = (isChat ? ChatVolumePercent : EverythingVolumePercent) / 100f;
+                    // Mute is only ever driven for chat sessions - never touch it for "everything
+                    // else" so we don't fight a mute the user set by hand in the Windows mixer.
+                    bool targetMute = isChat && ChatMuted;
+
+                    // Skip the COM write entirely when it would be a no-op - every poll tick
+                    // otherwise rewrites every session's volume/mute regardless of whether anything
+                    // changed since the last tick.
+                    if (pid.HasValue && _lastApplied.TryGetValue(pid.Value, out var last)
+                        && last.Volume == targetVolume && (!isChat || last.Mute == targetMute))
                     {
-                        vol.Volume = ChatVolumePercent / 100f;
-                        vol.Mute = ChatMuted;
+                        continue;
                     }
-                    else
-                    {
-                        vol.Volume = EverythingVolumePercent / 100f;
-                        // Deliberately don't touch Mute here: don't fight a mute the user set by hand
-                        // in the Windows volume mixer for some unrelated app.
-                    }
+
+                    vol.Volume = targetVolume;
+                    if (isChat) vol.Mute = targetMute;
+                    if (pid.HasValue) _lastApplied[pid.Value] = (targetVolume, targetMute);
                 }
                 catch
                 {
@@ -140,15 +162,13 @@ public sealed class AudioSessionService : IDisposable
         }
     }
 
-    private static string? GetProcessName(AudioSessionControl session)
+    private static uint? GetSessionProcessId(AudioSessionControl session)
     {
         try
         {
             if (session.IsSystemSoundsSession) return null;
             uint pid = session.GetProcessID;
-            if (pid == 0) return null;
-            using var proc = Process.GetProcessById((int)pid);
-            return (proc.ProcessName + ".exe").ToLowerInvariant();
+            return pid == 0 ? null : pid;
         }
         catch
         {
@@ -156,8 +176,29 @@ public sealed class AudioSessionService : IDisposable
         }
     }
 
+    private string? GetProcessName(uint pid)
+    {
+        if (_processNameCache.TryGetValue(pid, out var cached)) return cached;
+
+        string? name;
+        try
+        {
+            using var proc = Process.GetProcessById((int)pid);
+            name = (proc.ProcessName + ".exe").ToLowerInvariant();
+        }
+        catch
+        {
+            name = null;
+        }
+        _processNameCache[pid] = name;
+        return name;
+    }
+
     public int AdjustChatVolume(int deltaPercent)
     {
+        // A manual nudge while ducked means the user took control - drop the pending duck-restore
+        // so un-ducking later doesn't silently snap back over this and discard it.
+        _preDuckVolume = null;
         ChatVolumePercent = Math.Clamp(ChatVolumePercent + deltaPercent, 0, 100);
         if (deltaPercent > 0 && ChatVolumePercent > 0) ChatMuted = false;
         ApplyToAllSessions();

@@ -57,21 +57,10 @@ public partial class App : Application
 
         if (failed.Count > 0)
         {
-            var names = string.Join(", ", failed.Select(FriendlyActionName));
+            var names = string.Join(", ", failed.Select(a => a.ToFriendlyName()));
             _trayIconManager.ShowBalloon("ChatMix", $"Could not register hotkey(s) for: {names} (probably already in use by another app). Change them in Settings.");
         }
     }
-
-    private static string FriendlyActionName(HotkeyAction a) => a switch
-    {
-        HotkeyAction.ChatVolumeUp => "Chat Volume Up",
-        HotkeyAction.ChatVolumeDown => "Chat Volume Down",
-        HotkeyAction.EverythingVolumeUp => "Everything Else Volume Up",
-        HotkeyAction.EverythingVolumeDown => "Everything Else Volume Down",
-        HotkeyAction.ToggleMuteChat => "Toggle Mute Chat",
-        HotkeyAction.ToggleDuckChat => "Toggle Duck Chat",
-        _ => a.ToString()
-    };
 
     private void PersistAudioState()
     {
@@ -135,7 +124,7 @@ public partial class App : Application
         var failed = _hotkeyService.RegisterAll(s.Hotkeys);
         if (failed.Count > 0)
         {
-            var names = string.Join(", ", failed.Select(FriendlyActionName));
+            var names = string.Join(", ", failed.Select(a => a.ToFriendlyName()));
             MessageBox.Show($"Could not register hotkey(s) for: {names}.\nThey may already be in use by another application.", "ChatMix", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
 

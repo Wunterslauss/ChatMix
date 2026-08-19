@@ -58,6 +58,11 @@ public sealed class SettingsWindow : Window
         root.Children.Add(tabs);
 
         Content = root;
+
+        // The tray menu's "Start with Windows" item can change _s.StartWithWindows while this
+        // window is open. Re-sync the checkbox whenever the window regains focus, so Save() below
+        // doesn't blindly overwrite that change with a stale snapshot taken at construction time.
+        Activated += (_, __) => _startupCheck.IsChecked = _s.StartWithWindows;
     }
 
     private Dictionary<HotkeyAction, HotkeyBinding> GetActionBindingMap() => new()
@@ -71,17 +76,6 @@ public sealed class SettingsWindow : Window
     };
 
     private static HotkeyBinding Clone(HotkeyBinding b) => new(b.Ctrl, b.Alt, b.Shift, b.Win, b.Key);
-
-    private static string FriendlyName(HotkeyAction a) => a switch
-    {
-        HotkeyAction.ChatVolumeUp => "Chat Volume Up",
-        HotkeyAction.ChatVolumeDown => "Chat Volume Down",
-        HotkeyAction.EverythingVolumeUp => "Everything Else Volume Up",
-        HotkeyAction.EverythingVolumeDown => "Everything Else Volume Down",
-        HotkeyAction.ToggleMuteChat => "Toggle Mute Chat",
-        HotkeyAction.ToggleDuckChat => "Toggle Duck Chat",
-        _ => a.ToString()
-    };
 
     private TabItem BuildChatAppsTab()
     {
@@ -140,7 +134,7 @@ public sealed class SettingsWindow : Window
                 Tag = action
             };
             box.PreviewKeyDown += HotkeyBox_PreviewKeyDown;
-            outer.Children.Add(LabeledRow(FriendlyName(action) + ":", box));
+            outer.Children.Add(LabeledRow(action.ToFriendlyName() + ":", box));
         }
 
         return new TabItem { Header = "Hotkeys", Content = new ScrollViewer { Content = outer, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };

@@ -12,19 +12,27 @@ public static class StartupService
 
     public static void SetStartWithWindows(bool enabled)
     {
-        using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
-        if (key == null) return;
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true);
+            if (key == null) return;
 
-        if (enabled)
-        {
-            var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
-            if (!string.IsNullOrEmpty(exePath))
-                key.SetValue(ValueName, $"\"{exePath}\"");
+            if (enabled)
+            {
+                var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exePath))
+                    key.SetValue(ValueName, $"\"{exePath}\"");
+            }
+            else
+            {
+                if (key.GetValue(ValueName) != null)
+                    key.DeleteValue(ValueName, throwOnMissingValue: false);
+            }
         }
-        else
+        catch
         {
-            if (key.GetValue(ValueName) != null)
-                key.DeleteValue(ValueName, throwOnMissingValue: false);
+            // Registry access can be blocked by Group Policy or AV/EDR software. Don't crash the
+            // app over a "Start with Windows" toggle - just leave the setting unapplied.
         }
     }
 }
