@@ -9,6 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ChatMix</AssemblyName>
     <RootNamespace>ChatMix</RootNamespace>
+    <ApplicationIcon>Assets\chatmix.ico</ApplicationIcon>
     <!--
       NOT InvariantGlobalization: WPF's text-input stack (any TextBox, including the whole
       Settings window) needs real CultureInfo data for the user's actual Windows input language
