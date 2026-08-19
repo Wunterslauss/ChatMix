@@ -24,23 +24,27 @@ public sealed class AudioSessionService : IDisposable
     public int ChatVolumePercent { get; private set; }
     public int EverythingVolumePercent { get; private set; }
     public bool ChatMuted { get; private set; }
-    public bool IsDucked => _preDuckVolume.HasValue;
+    public bool EverythingMuted { get; private set; }
+    public bool IsChatDucked => _preDuckVolume.HasValue;
+    public bool IsEverythingDucked => _preDuckEverythingVolume.HasValue;
 
     /// <summary>Set when a poll tick fails (e.g. default device transiently unavailable); cleared on
     /// the next successful poll. TrayIconManager surfaces this so a degraded state isn't silent.</summary>
     public string? LastPollError { get; private set; }
 
     private int? _preDuckVolume;
+    private int? _preDuckEverythingVolume;
 
     /// <summary>Fired after a hotkey-driven change to volume/mute/duck state (not fired by the background poll).</summary>
     public event Action? StateChanged;
 
-    public AudioSessionService(List<string> chatProcessNames, int initialChatVolume, int initialEverythingVolume, bool initialChatMuted)
+    public AudioSessionService(List<string> chatProcessNames, int initialChatVolume, int initialEverythingVolume, bool initialChatMuted, bool initialEverythingMuted)
     {
         _chatProcessNames = Normalize(chatProcessNames);
         ChatVolumePercent = Math.Clamp(initialChatVolume, 0, 100);
         EverythingVolumePercent = Math.Clamp(initialEverythingVolume, 0, 100);
         ChatMuted = initialChatMuted;
+        EverythingMuted = initialEverythingMuted;
 
         RefreshDevice();
         ApplyToAllSessions();
@@ -133,21 +137,22 @@ public sealed class AudioSessionService : IDisposable
 
                     bool isChat = processName != null && _chatProcessNames.Contains(processName);
                     float targetVolume = (isChat ? ChatVolumePercent : EverythingVolumePercent) / 100f;
-                    // Mute is only ever driven for chat sessions - never touch it for "everything
-                    // else" so we don't fight a mute the user set by hand in the Windows mixer.
-                    bool targetMute = isChat && ChatMuted;
+                    // Mute is driven symmetrically for both groups now (ChatMuted / EverythingMuted),
+                    // same as volume. Both default to false, so a session is only ever actively
+                    // unmuted by us here, not fought - unless the matching toggle is on.
+                    bool targetMute = isChat ? ChatMuted : EverythingMuted;
 
                     // Skip the COM write entirely when it would be a no-op - every poll tick
                     // otherwise rewrites every session's volume/mute regardless of whether anything
                     // changed since the last tick.
                     if (pid.HasValue && _lastApplied.TryGetValue(pid.Value, out var last)
-                        && last.Volume == targetVolume && (!isChat || last.Mute == targetMute))
+                        && last.Volume == targetVolume && last.Mute == targetMute)
                     {
                         continue;
                     }
 
                     vol.Volume = targetVolume;
-                    if (isChat) vol.Mute = targetMute;
+                    vol.Mute = targetMute;
                     if (pid.HasValue) _lastApplied[pid.Value] = (targetVolume, targetMute);
                 }
                 catch
@@ -210,10 +215,14 @@ public sealed class AudioSessionService : IDisposable
     /// Everything down by the same amount), negative moves toward Everything.</summary>
     public (int Chat, int Everything) Crossfade(int deltaTowardChatPercent)
     {
-        _preDuckVolume = null; // manual control cancels any pending duck-restore, same as AdjustChatVolume
+        // Manual control cancels any pending duck-restore on either side, same as the single-group
+        // adjust methods - otherwise a later un-duck would silently snap back over this.
+        _preDuckVolume = null;
+        _preDuckEverythingVolume = null;
         ChatVolumePercent = Math.Clamp(ChatVolumePercent + deltaTowardChatPercent, 0, 100);
         EverythingVolumePercent = Math.Clamp(EverythingVolumePercent - deltaTowardChatPercent, 0, 100);
         if (deltaTowardChatPercent > 0 && ChatVolumePercent > 0) ChatMuted = false;
+        if (deltaTowardChatPercent < 0 && EverythingVolumePercent > 0) EverythingMuted = false;
         ApplyToAllSessions();
         StateChanged?.Invoke();
         return (ChatVolumePercent, EverythingVolumePercent);
@@ -221,7 +230,9 @@ public sealed class AudioSessionService : IDisposable
 
     public int AdjustEverythingVolume(int deltaPercent)
     {
+        _preDuckEverythingVolume = null;
         EverythingVolumePercent = Math.Clamp(EverythingVolumePercent + deltaPercent, 0, 100);
+        if (deltaPercent > 0 && EverythingVolumePercent > 0) EverythingMuted = false;
         ApplyToAllSessions();
         StateChanged?.Invoke();
         return EverythingVolumePercent;
@@ -233,6 +244,14 @@ public sealed class AudioSessionService : IDisposable
         ApplyToAllSessions();
         StateChanged?.Invoke();
         return ChatMuted;
+    }
+
+    public bool ToggleMuteEverything()
+    {
+        EverythingMuted = !EverythingMuted;
+        ApplyToAllSessions();
+        StateChanged?.Invoke();
+        return EverythingMuted;
     }
 
     public int ToggleDuckChat(int duckPercent)
@@ -251,6 +270,24 @@ public sealed class AudioSessionService : IDisposable
         ApplyToAllSessions();
         StateChanged?.Invoke();
         return ChatVolumePercent;
+    }
+
+    public int ToggleDuckEverything(int duckPercent)
+    {
+        if (_preDuckEverythingVolume.HasValue)
+        {
+            EverythingVolumePercent = _preDuckEverythingVolume.Value;
+            _preDuckEverythingVolume = null;
+        }
+        else
+        {
+            _preDuckEverythingVolume = EverythingVolumePercent;
+            EverythingVolumePercent = Math.Clamp(duckPercent, 0, 100);
+        }
+
+        ApplyToAllSessions();
+        StateChanged?.Invoke();
+        return EverythingVolumePercent;
     }
 
     public void Dispose()

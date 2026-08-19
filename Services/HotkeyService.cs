@@ -73,6 +73,8 @@ public sealed class HotkeyService : IDisposable
         TryRegister(HotkeyAction.EverythingVolumeDown, hotkeys.EverythingVolumeDown);
         TryRegister(HotkeyAction.ToggleMuteChat, hotkeys.ToggleMuteChat);
         TryRegister(HotkeyAction.ToggleDuckChat, hotkeys.ToggleDuckChat);
+        TryRegister(HotkeyAction.ToggleMuteEverything, hotkeys.ToggleMuteEverything);
+        TryRegister(HotkeyAction.ToggleDuckEverything, hotkeys.ToggleDuckEverything);
         return failed;
     }
 

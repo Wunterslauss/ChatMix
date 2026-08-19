@@ -41,7 +41,7 @@ public partial class App : Application
         _settingsService = new SettingsService();
         var s = _settingsService.Settings;
 
-        _audioService = new AudioSessionService(s.ChatProcessNames, s.LastChatVolumePercent, s.LastEverythingVolumePercent, s.ChatMuted);
+        _audioService = new AudioSessionService(s.ChatProcessNames, s.LastChatVolumePercent, s.LastEverythingVolumePercent, s.ChatMuted, s.EverythingMuted);
         _audioService.StateChanged += PersistAudioState;
 
         _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
@@ -73,6 +73,7 @@ public partial class App : Application
         s.LastChatVolumePercent = _audioService.ChatVolumePercent;
         s.LastEverythingVolumePercent = _audioService.EverythingVolumePercent;
         s.ChatMuted = _audioService.ChatMuted;
+        s.EverythingMuted = _audioService.EverythingMuted;
         _settingsService.Save();
     }
 
@@ -88,18 +89,26 @@ public partial class App : Application
                 ShowOverlay("Chat Volume", _audioService.AdjustChatVolume(-step), _audioService.ChatMuted);
                 break;
             case HotkeyAction.EverythingVolumeUp:
-                ShowOverlay("Everything Else Volume", _audioService.AdjustEverythingVolume(step), false);
+                ShowOverlay("Everything Else Volume", _audioService.AdjustEverythingVolume(step), _audioService.EverythingMuted);
                 break;
             case HotkeyAction.EverythingVolumeDown:
-                ShowOverlay("Everything Else Volume", _audioService.AdjustEverythingVolume(-step), false);
+                ShowOverlay("Everything Else Volume", _audioService.AdjustEverythingVolume(-step), _audioService.EverythingMuted);
                 break;
             case HotkeyAction.ToggleMuteChat:
                 var muted = _audioService.ToggleMuteChat();
                 ShowOverlay("Chat Volume", _audioService.ChatVolumePercent, muted);
                 break;
+            case HotkeyAction.ToggleMuteEverything:
+                var everythingMuted = _audioService.ToggleMuteEverything();
+                ShowOverlay("Everything Else Volume", _audioService.EverythingVolumePercent, everythingMuted);
+                break;
             case HotkeyAction.ToggleDuckChat:
                 var vol = _audioService.ToggleDuckChat(_settingsService.Settings.DuckPercent);
-                ShowOverlay(_audioService.IsDucked ? "Chat Ducked" : "Chat Restored", vol, _audioService.ChatMuted);
+                ShowOverlay(_audioService.IsChatDucked ? "Chat Ducked" : "Chat Restored", vol, _audioService.ChatMuted);
+                break;
+            case HotkeyAction.ToggleDuckEverything:
+                var evol = _audioService.ToggleDuckEverything(_settingsService.Settings.DuckPercent);
+                ShowOverlay(_audioService.IsEverythingDucked ? "Everything Else Ducked" : "Everything Else Restored", evol, _audioService.EverythingMuted);
                 break;
         }
     }

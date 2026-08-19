@@ -66,14 +66,14 @@ public sealed class TrayIconManager : IDisposable
     private void RefreshLabels()
     {
         _chatVolumeItem.Text = $"Chat: {_audio.ChatVolumePercent}%{(_audio.ChatMuted ? " (Muted)" : "")}";
-        _everythingVolumeItem.Text = $"Everything Else: {_audio.EverythingVolumePercent}%";
+        _everythingVolumeItem.Text = $"Everything Else: {_audio.EverythingVolumePercent}%{(_audio.EverythingMuted ? " (Muted)" : "")}";
 
         // Re-sync from the live setting every time the menu is about to be shown, so a change made
         // via the Settings window (which doesn't know about this control) isn't left stale here.
         _startupItem.Checked = _settings.Settings.StartWithWindows;
 
         var degraded = _audio.LastPollError != null ? " - audio device issue" : "";
-        var tooltip = $"ChatMix - Chat {_audio.ChatVolumePercent}%{(_audio.ChatMuted ? " (Muted)" : "")} | Rest {_audio.EverythingVolumePercent}%{degraded}";
+        var tooltip = $"ChatMix - Chat {_audio.ChatVolumePercent}%{(_audio.ChatMuted ? " (Muted)" : "")} | Rest {_audio.EverythingVolumePercent}%{(_audio.EverythingMuted ? " (Muted)" : "")}{degraded}";
         _notifyIcon.Text = tooltip.Length > 63 ? tooltip.Substring(0, 63) : tooltip;
     }
 

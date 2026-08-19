@@ -9,10 +9,12 @@ ChatMix controls real Windows audio sessions directly via the Core Audio API (NA
 
 ## Features
 
-- **Two volume groups**
+- **Two volume groups, controlled symmetrically**
   - **Chat** — any active audio session whose process matches a configurable list (default: `discord.exe`)
   - **Everything Else** — every other active audio session
-- **Global hotkeys** (default bindings use F13–F18 — unlabeled keys with no physical key and no
+  - Both groups get the same set of controls: volume up/down, mute toggle, and duck toggle
+    (drop to a low preset, press again to restore)
+- **Global hotkeys** (default bindings use F13–F20 — unlabeled keys with no physical key and no
   conflicts with other software, which is exactly why they're a popular Stream Deck choice):
   | Action | Default key |
   |---|---|
@@ -21,7 +23,9 @@ ChatMix controls real Windows audio sessions directly via the Core Audio API (NA
   | Everything Volume Up | F15 |
   | Everything Volume Down | F16 |
   | Toggle Mute Chat | F17 |
-  | Toggle Duck Chat (drop chat to a low preset, press again to restore) | F18 |
+  | Toggle Duck Chat | F18 |
+  | Toggle Mute Everything Else | F19 |
+  | Toggle Duck Everything Else | F20 |
 - Volume changes apply to **every** matching session in a group simultaneously (e.g. all of
   Discord's audio sessions move together).
 - **Live re-detection** — sessions are re-scanned periodically, so relaunching Discord or opening

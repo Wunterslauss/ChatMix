@@ -18,6 +18,7 @@ public class AppSettings
     public int LastChatVolumePercent { get; set; } = 100;
     public int LastEverythingVolumePercent { get; set; } = 100;
     public bool ChatMuted { get; set; } = false;
+    public bool EverythingMuted { get; set; } = false;
 
     public HotkeySettings Hotkeys { get; set; } = new();
 }

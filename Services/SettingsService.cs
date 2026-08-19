@@ -58,12 +58,16 @@ public class SettingsService
         s.Hotkeys.EverythingVolumeDown ??= new(false, false, false, false, "None");
         s.Hotkeys.ToggleMuteChat ??= new(false, false, false, false, "None");
         s.Hotkeys.ToggleDuckChat ??= new(false, false, false, false, "None");
+        s.Hotkeys.ToggleMuteEverything ??= new(false, false, false, false, "None");
+        s.Hotkeys.ToggleDuckEverything ??= new(false, false, false, false, "None");
         s.Hotkeys.ChatVolumeUp.Key ??= "None";
         s.Hotkeys.ChatVolumeDown.Key ??= "None";
         s.Hotkeys.EverythingVolumeUp.Key ??= "None";
         s.Hotkeys.EverythingVolumeDown.Key ??= "None";
         s.Hotkeys.ToggleMuteChat.Key ??= "None";
         s.Hotkeys.ToggleDuckChat.Key ??= "None";
+        s.Hotkeys.ToggleMuteEverything.Key ??= "None";
+        s.Hotkeys.ToggleDuckEverything.Key ??= "None";
 
         return s;
     }

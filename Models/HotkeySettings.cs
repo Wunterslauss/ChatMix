@@ -1,7 +1,7 @@
 namespace ChatMix.Models;
 
 /// <summary>
-/// Defaults use F13-F18 - unlabeled keys that don't exist on physical keyboards and are never
+/// Defaults use F13-F20 - unlabeled keys that don't exist on physical keyboards and are never
 /// bound by other apps, which is exactly why they're a popular choice for Stream Deck "Hotkey" actions.
 /// </summary>
 public class HotkeySettings
@@ -12,4 +12,6 @@ public class HotkeySettings
     public HotkeyBinding EverythingVolumeDown { get; set; } = new(false, false, false, false, "F16");
     public HotkeyBinding ToggleMuteChat { get; set; } = new(false, false, false, false, "F17");
     public HotkeyBinding ToggleDuckChat { get; set; } = new(false, false, false, false, "F18");
+    public HotkeyBinding ToggleMuteEverything { get; set; } = new(false, false, false, false, "F19");
+    public HotkeyBinding ToggleDuckEverything { get; set; } = new(false, false, false, false, "F20");
 }

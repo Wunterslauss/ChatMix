@@ -7,7 +7,9 @@ public enum HotkeyAction
     EverythingVolumeUp,
     EverythingVolumeDown,
     ToggleMuteChat,
-    ToggleDuckChat
+    ToggleDuckChat,
+    ToggleMuteEverything,
+    ToggleDuckEverything
 }
 
 public static class HotkeyActionExtensions
@@ -22,6 +24,8 @@ public static class HotkeyActionExtensions
         HotkeyAction.EverythingVolumeDown => "Everything Else Volume Down",
         HotkeyAction.ToggleMuteChat => "Toggle Mute Chat",
         HotkeyAction.ToggleDuckChat => "Toggle Duck Chat",
+        HotkeyAction.ToggleMuteEverything => "Toggle Mute Everything Else",
+        HotkeyAction.ToggleDuckEverything => "Toggle Duck Everything Else",
         _ => action.ToString()
     };
 }

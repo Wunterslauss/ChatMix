@@ -74,6 +74,8 @@ public sealed class SettingsWindow : Window
         [HotkeyAction.EverythingVolumeDown] = _s.Hotkeys.EverythingVolumeDown,
         [HotkeyAction.ToggleMuteChat] = _s.Hotkeys.ToggleMuteChat,
         [HotkeyAction.ToggleDuckChat] = _s.Hotkeys.ToggleDuckChat,
+        [HotkeyAction.ToggleMuteEverything] = _s.Hotkeys.ToggleMuteEverything,
+        [HotkeyAction.ToggleDuckEverything] = _s.Hotkeys.ToggleDuckEverything,
     };
 
     private static HotkeyBinding Clone(HotkeyBinding b) => new(b.Ctrl, b.Alt, b.Shift, b.Win, b.Key);
@@ -122,7 +124,8 @@ public sealed class SettingsWindow : Window
                  {
                      HotkeyAction.ChatVolumeUp, HotkeyAction.ChatVolumeDown,
                      HotkeyAction.EverythingVolumeUp, HotkeyAction.EverythingVolumeDown,
-                     HotkeyAction.ToggleMuteChat, HotkeyAction.ToggleDuckChat
+                     HotkeyAction.ToggleMuteChat, HotkeyAction.ToggleDuckChat,
+                     HotkeyAction.ToggleMuteEverything, HotkeyAction.ToggleDuckEverything
                  })
         {
             var box = new TextBox
@@ -246,6 +249,8 @@ public sealed class SettingsWindow : Window
         _s.Hotkeys.EverythingVolumeDown = _workingHotkeys[HotkeyAction.EverythingVolumeDown];
         _s.Hotkeys.ToggleMuteChat = _workingHotkeys[HotkeyAction.ToggleMuteChat];
         _s.Hotkeys.ToggleDuckChat = _workingHotkeys[HotkeyAction.ToggleDuckChat];
+        _s.Hotkeys.ToggleMuteEverything = _workingHotkeys[HotkeyAction.ToggleMuteEverything];
+        _s.Hotkeys.ToggleDuckEverything = _workingHotkeys[HotkeyAction.ToggleDuckEverything];
 
         _s.StartWithWindows = _startupCheck.IsChecked == true;
         _s.VolumeWheelCrossfadeEnabled = _crossfadeCheck.IsChecked == true;
