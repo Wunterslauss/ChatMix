@@ -101,3 +101,7 @@ untouched instead of also changing underneath it.
 This is a global behavior change — while it's on, volume up/down keys on *any* keyboard stop
 controlling system volume entirely and drive this crossfade instead. That's why it defaults to
 off.
+
+**Need real system volume back?** Hold **Ctrl** while pressing volume up/down (or scrolling the
+wheel) — that one press is let through untouched, so Windows handles it exactly as it normally
+would (real volume + the native OSD), no need to turn the feature off.

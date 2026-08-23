@@ -55,4 +55,9 @@ internal static class NativeMethods
     public const int WM_SYSKEYDOWN = 0x0104;
     public const uint VK_VOLUME_DOWN = 0xAE;
     public const uint VK_VOLUME_UP = 0xAF;
+    public const int VK_CONTROL = 0x11;
+
+    /// <summary>High-order bit set means the key is currently physically held down.</summary>
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int vKey);
 }

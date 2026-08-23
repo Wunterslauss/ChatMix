@@ -9,6 +9,10 @@ namespace ChatMix.Services;
 /// Chat/Everything crossfade instead of the system volume. Uses a low-level keyboard hook so the
 /// key press can be suppressed: without that, Windows would still separately change the system's
 /// master volume and show its own OSD alongside whatever ChatMix does.
+///
+/// Holding Ctrl while scrolling is a pass-through escape hatch: the key isn't intercepted at all,
+/// so Windows handles it exactly as it normally would (real system volume + its own OSD) - since
+/// enabling this feature otherwise means the wheel can no longer adjust real volume at all.
 /// </summary>
 public sealed class VolumeKeyCrossfadeService : IDisposable
 {
@@ -57,6 +61,14 @@ public sealed class VolumeKeyCrossfadeService : IDisposable
         if (nCode >= 0 && (wParam == (IntPtr)NativeMethods.WM_KEYDOWN || wParam == (IntPtr)NativeMethods.WM_SYSKEYDOWN))
         {
             var data = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
+            bool isVolumeKey = data.vkCode == NativeMethods.VK_VOLUME_DOWN || data.vkCode == NativeMethods.VK_VOLUME_UP;
+
+            if (isVolumeKey && (NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) & 0x8000) != 0)
+            {
+                // Escape hatch: let this one press through untouched for real system volume.
+                return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
+            }
+
             int step = Math.Max(1, _settings.Settings.StepPercent);
 
             if (data.vkCode == NativeMethods.VK_VOLUME_DOWN)

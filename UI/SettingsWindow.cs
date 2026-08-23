@@ -210,7 +210,8 @@ public sealed class SettingsWindow : Window
         panel.Children.Add(new TextBlock
         {
             Text = "While this is on, volume up/down keys never change your system volume - only "
-                 + "the Chat/Everything balance, everywhere, from any keyboard.",
+                 + "the Chat/Everything balance, everywhere, from any keyboard. Hold Ctrl while "
+                 + "pressing volume up/down to bypass this and adjust real system volume instead.",
             TextWrapping = TextWrapping.Wrap,
             Opacity = 0.7,
             Margin = new Thickness(0, 0, 0, 10)
