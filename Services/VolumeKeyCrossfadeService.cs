@@ -69,19 +69,31 @@ public sealed class VolumeKeyCrossfadeService : IDisposable
                 return NativeMethods.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
             }
 
-            int step = Math.Max(1, _settings.Settings.StepPercent);
-
-            if (data.vkCode == NativeMethods.VK_VOLUME_DOWN)
+            if (isVolumeKey)
             {
-                var (chat, everything) = _audio.Crossfade(step); // scroll down -> more chat
-                BalanceChanged?.Invoke(chat, everything);
+                // Windows silently swallows exceptions that escape a low-level hook callback (no
+                // crash, no log) - catch explicitly so a bug here can't make the wheel feel "dead"
+                // with zero diagnostic trace.
+                try
+                {
+                    int step = Math.Max(1, _settings.Settings.StepPercent);
+                    if (data.vkCode == NativeMethods.VK_VOLUME_DOWN)
+                    {
+                        var (chat, everything) = _audio.Crossfade(step); // scroll down -> more chat
+                        BalanceChanged?.Invoke(chat, everything);
+                    }
+                    else
+                    {
+                        var (chat, everything) = _audio.Crossfade(-step); // scroll up -> more everything
+                        BalanceChanged?.Invoke(chat, everything);
+                    }
+                }
+                catch
+                {
+                    // Don't let a bug here escape into the OS's hook boundary - the key press is
+                    // still swallowed below either way, so system volume stays untouched.
+                }
                 return (IntPtr)1; // swallow: don't also change system volume / show its OSD
-            }
-            if (data.vkCode == NativeMethods.VK_VOLUME_UP)
-            {
-                var (chat, everything) = _audio.Crossfade(-step); // scroll up -> more everything
-                BalanceChanged?.Invoke(chat, everything);
-                return (IntPtr)1;
             }
         }
 

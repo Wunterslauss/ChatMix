@@ -46,6 +46,16 @@ public partial class OverlayWindow : Window
         FillBar.Width = FillTrack.Width * (fillPercent / 100.0);
 
         PositionWindow();
+
+        // Topmost only guarantees we sit above non-topmost windows; among multiple topmost
+        // windows, Z-order follows activation order. Since this window is created once at startup
+        // and never reactivated, any other topmost window shown since (Discord/Steam overlays,
+        // notifications, etc.) can end up permanently covering it. Re-toggling forces WPF to
+        // actually re-insert us at the front - setting Topmost to a value it already holds is a
+        // no-op, so it has to go false->true, not just "= true" again.
+        Topmost = false;
+        Topmost = true;
+
         Opacity = 1;
         _hideTimer.Stop();
         _hideTimer.Start();
