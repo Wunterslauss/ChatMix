@@ -20,6 +20,7 @@ public sealed class AudioSessionService : IDisposable
     private List<string> _chatProcessNames;
     private readonly Dictionary<uint, string?> _processNameCache = new();
     private readonly Dictionary<uint, (float Volume, bool Mute)> _lastApplied = new();
+    private readonly HashSet<uint> _seenPids = new(); // scratch set, reused every pass to avoid allocating
 
     public int ChatVolumePercent { get; private set; }
     public int EverythingVolumePercent { get; private set; }
@@ -123,6 +124,7 @@ public sealed class AudioSessionService : IDisposable
             var sessions = _device.AudioSessionManager?.Sessions;
             if (sessions == null) return;
 
+            _seenPids.Clear();
             for (int i = 0; i < sessions.Count; i++)
             {
                 try
@@ -131,6 +133,7 @@ public sealed class AudioSessionService : IDisposable
                     if (session.State == AudioSessionState.AudioSessionStateExpired) continue;
 
                     var pid = GetSessionProcessId(session);
+                    if (pid.HasValue) _seenPids.Add(pid.Value);
                     var processName = pid.HasValue ? GetProcessName(pid.Value) : null;
                     var vol = session.SimpleAudioVolume;
                     if (vol == null) continue;
@@ -160,11 +163,28 @@ public sealed class AudioSessionService : IDisposable
                     // Session may have expired between enumeration and access; skip it.
                 }
             }
+
+            // Only after a full pass: forget PIDs that no longer have a session. Windows reuses
+            // PIDs quickly, so a stale PID->name entry could make a brand-new process (e.g. a
+            // restarted Discord that lands on a recycled PID) inherit the previous owner's group.
+            PruneStale(_processNameCache);
+            PruneStale(_lastApplied);
         }
         catch
         {
             // Sessions collection briefly unavailable; next poll/hotkey press will retry.
         }
+    }
+
+    private void PruneStale<TValue>(Dictionary<uint, TValue> cache)
+    {
+        List<uint>? stale = null; // stays null (no allocation) in the common case of nothing stale
+        foreach (var pid in cache.Keys)
+        {
+            if (!_seenPids.Contains(pid)) (stale ??= new()).Add(pid);
+        }
+        if (stale == null) return;
+        foreach (var pid in stale) cache.Remove(pid);
     }
 
     private static uint? GetSessionProcessId(AudioSessionControl session)
